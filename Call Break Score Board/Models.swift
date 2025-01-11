@@ -1,15 +1,6 @@
-//
-//  Models.swift
-//  Call Break Score Board
-//
-//  Created by Rohan Rathee on 10/01/25.
-//
-
-
-// Models.swift (Separate file for data models)
 import Foundation
 
-struct Player: Identifiable, Hashable { // Make Player Hashable
+struct Player: Identifiable, Hashable {
     let id = UUID()
     var name: String
     var score: Int = 0
@@ -19,6 +10,7 @@ struct Game: Identifiable {
     let id = UUID()
     var players: [Player]
     var rounds: [Round]
+    let isBlind: Bool // Add isBlind property
 }
 
 struct Round: Identifiable {

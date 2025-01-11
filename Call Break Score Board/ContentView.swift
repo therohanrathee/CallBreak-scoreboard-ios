@@ -1,21 +1,14 @@
-//
-//  ContentView.swift
-//  Call Break Score Board
-//
-//  Created by Rohan Rathee on 10/01/25.
-//
-
-
-// ContentView.swift
 import SwiftUI
 
 struct ContentView: View {
     @State private var players: [Player] = []
     @State private var isGameActive = false
     @State private var numberOfPlayers = 4
+    @State private var game: Game?
+    @State private var isBlindCall = false // New state for game mode
 
     var body: some View {
-        NavigationStack { // Use NavigationStack
+        NavigationStack {
             VStack {
                 Text("Call Break Score Board")
                     .font(.largeTitle)
@@ -29,19 +22,27 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
+                Toggle("Blind Call Mode", isOn: $isBlindCall) // Game Mode Toggle
+                    .padding(.horizontal)
+
                 PlayerSetupView(players: $players, numberOfPlayers: numberOfPlayers)
 
                 if players.count == numberOfPlayers {
-                    Button("Start Game") {
+                    Button(action: {
+                        game = Game(players: players, rounds: [], isBlind: isBlindCall) // Pass isBlind
                         isGameActive = true
+                    }) {
+                        Text("Start Game")
+                            .frame(maxWidth: .infinity)
                     }
                     .padding()
                     .buttonStyle(.borderedProminent)
                 }
             }
-            .navigationDestination(isPresented: $isGameActive) { // Correct navigation
-                if players.count == numberOfPlayers {
-                    GameView(game: Game(players: players, rounds: []))
+            .navigationDestination(isPresented: $isGameActive) {
+                if let game = game {
+                    let gameBinding = Binding { game } set: { self.game = $0 }
+                    GameView(game: gameBinding)
                 }
             }
             .navigationTitle("Call Break")

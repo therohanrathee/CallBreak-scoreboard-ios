@@ -1,12 +1,3 @@
-//
-//  PlayerSetupView.swift
-//  Call Break Score Board
-//
-//  Created by Rohan Rathee on 10/01/25.
-//
-
-
-// PlayerSetupView.swift
 import SwiftUI
 
 struct PlayerSetupView: View {
@@ -36,7 +27,7 @@ struct PlayerSetupView: View {
                 }
                 .onDelete(perform: deletePlayers)
             }
-            .listStyle(.plain) // Cleaner list style
+            .listStyle(.plain)
         }
         .padding()
         .onAppear {
