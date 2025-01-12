@@ -5,7 +5,7 @@ struct ContentView: View {
     @State private var isGameActive = false
     @State private var numberOfPlayers = 4
     @State private var game: Game?
-    @State private var isBlindCall = false // New state for game mode
+    @State private var isBlindCall = false
 
     var body: some View {
         NavigationStack {
@@ -22,14 +22,17 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
-                Toggle("Blind Call Mode", isOn: $isBlindCall) // Game Mode Toggle
+                Spacer()
+                    .frame(height: 20)
+
+                Toggle("Blind Call", isOn: $isBlindCall)
                     .padding(.horizontal)
 
                 PlayerSetupView(players: $players, numberOfPlayers: numberOfPlayers)
 
                 if players.count == numberOfPlayers {
                     Button(action: {
-                        game = Game(players: players, rounds: [], isBlind: isBlindCall) // Pass isBlind
+                        game = Game(players: players, rounds: [], isBlind: isBlindCall)
                         isGameActive = true
                     }) {
                         Text("Start Game")
@@ -45,7 +48,7 @@ struct ContentView: View {
                     GameView(game: gameBinding)
                 }
             }
-            .navigationTitle("Call Break")
+            
         }
     }
 }
