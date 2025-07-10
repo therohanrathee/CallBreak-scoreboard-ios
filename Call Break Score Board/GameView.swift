@@ -4,16 +4,17 @@ struct GameView: View {
     @Binding var game: Game
     @State private var calls: [UUID: String] = [:]
     @State private var made: [UUID: String] = [:]
-    @State private var currentRoundNumber = 1
-    @State private var showAlert = false
+    @State private var isGameOver = false
     @State private var alertMessage = ""
+    @State private var showAlert = false
+    @State private var isBlind = false
+    @State private var showEndGameConfirm = false
     @Environment(\.dismiss) var dismiss
-    private let numberOfRounds = 5
 
     var body: some View {
         ScrollView {
             VStack {
-                if currentRoundNumber <= numberOfRounds {
+                if !isGameOver {
                     roundInputView
                 } else {
                     gameOverView
@@ -24,6 +25,10 @@ struct GameView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Invalid Input"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+        .alert("Are you sure you want to end the game? Current Round Score will not be saved.", isPresented: $showEndGameConfirm) {
+            Button("End Game", role: .destructive) { isGameOver = true }
+            Button("Play More", role: .cancel) {}
         }
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -38,9 +43,8 @@ struct GameView: View {
 
     private var roundInputView: some View {
         VStack {
-            Text("Round \(currentRoundNumber)")
-                .font(.title2)
-                .padding(.top)
+            Toggle("Blind Call", isOn: $isBlind)
+                .padding(.bottom)
 
             ForEach(game.players) { player in
                 VStack {
@@ -78,6 +82,19 @@ struct GameView: View {
             .padding()
             .buttonStyle(.borderedProminent)
             .disabled(calls.count != game.players.count || made.count != game.players.count)
+
+            Button("End Game") {
+                showEndGameConfirm = true
+            }
+            .padding()
+            .buttonStyle(.bordered)
+        }
+        .onAppear {
+            if let lastRound = game.rounds.last {
+                isBlind = lastRound.isBlind
+            } else {
+                isBlind = false
+            }
         }
     }
 
@@ -199,7 +216,7 @@ struct GameView: View {
             let made = Int(made[player.id] ?? "0") ?? 0
 
             var score = 0
-            if game.isBlind {
+            if isBlind {
                 if made > call {
                     score = call * 20 + (made - call)
                 } else if made == call {
@@ -218,9 +235,8 @@ struct GameView: View {
             }
             roundScores[player.id] = score
         }
-        game.rounds.append(Round(scores: roundScores))
+        game.rounds.append(Round(scores: roundScores, isBlind: isBlind))
         calls = [:]
         made = [:]
-        currentRoundNumber += 1
     }
 }

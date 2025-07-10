@@ -10,10 +10,10 @@ struct Game: Identifiable {
     let id = UUID()
     var players: [Player]
     var rounds: [Round]
-    let isBlind: Bool // Add isBlind property
 }
 
 struct Round: Identifiable {
     let id = UUID()
     var scores: [UUID: Int]
+    var isBlind: Bool
 }

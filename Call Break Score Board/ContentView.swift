@@ -5,7 +5,6 @@ struct ContentView: View {
     @State private var isGameActive = false
     @State private var numberOfPlayers = 4
     @State private var game: Game?
-    @State private var isBlindCall = false
 
     var body: some View {
         NavigationStack {
@@ -25,14 +24,11 @@ struct ContentView: View {
                 Spacer()
                     .frame(height: 20)
 
-                Toggle("Blind Call", isOn: $isBlindCall)
-                    .padding(.horizontal)
-
                 PlayerSetupView(players: $players, numberOfPlayers: numberOfPlayers)
 
                 if players.count == numberOfPlayers {
                     Button(action: {
-                        game = Game(players: players, rounds: [], isBlind: isBlindCall)
+                        game = Game(players: players, rounds: [])
                         isGameActive = true
                     }) {
                         Text("Start Game")
