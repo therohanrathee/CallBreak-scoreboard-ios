@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct GameView: View {
@@ -9,6 +10,7 @@ struct GameView: View {
     @State private var showAlert = false
     @State private var isBlind = false
     @State private var showEndGameConfirm = false
+    @State private var expandedPlayers: Set<UUID> = []
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -19,7 +21,6 @@ struct GameView: View {
                 } else {
                     gameOverView
                 }
-                roundHistoryView
             }
             .padding()
         }
@@ -53,7 +54,7 @@ struct GameView: View {
 
                     HStack {
                         Text("Call:")
-                        TextField("Call", text: Binding(
+                        TextField("Call", text: Binding<String>(
                             get: { calls[player.id, default: ""] },
                             set: { calls[player.id] = $0.filter { "0123456789".contains($0) } }
                         ))
@@ -63,7 +64,7 @@ struct GameView: View {
                         .multilineTextAlignment(.center)
 
                         Text("Made:")
-                        TextField("Made", text: Binding(
+                        TextField("Made", text: Binding<String>(
                             get: { made[player.id, default: ""] },
                             set: { made[player.id] = $0.filter { "0123456789".contains($0) } }
                         ))
@@ -105,34 +106,49 @@ struct GameView: View {
                 .padding(.top)
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            ForEach(game.rounds.indices, id: \.self) { roundIndex in
-                VStack(alignment: .leading) {
-                    Text("Round \(roundIndex + 1) Scores:")
-                        .font(.headline)
-                    HStack {
-                        ForEach(game.players) { player in
-                            Text("\(player.name): \((Double(game.rounds[roundIndex].scores[player.id] ?? 0) / 10.0), specifier: "%.1f")")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                    Divider()
-                }
-                .padding(.bottom, 8)
-            }
-            .padding(.horizontal)
-
             VStack(alignment: .leading) {
                 Text("Final Standings:")
                     .font(.headline)
                     .padding(.bottom, 4)
 
                 ForEach(rankedPlayers(), id: \.player.id) { playerWithRank in
-                    HStack {
-                        Text("\(playerWithRank.rank).")
-                        Text(playerWithRank.player.name)
-                        Spacer()
-                        Text("Total Score: \((Double(playerWithRank.totalScore) / 10.0), specifier: "%.1f")")
-                    }
+                    DisclosureGroup(
+                        isExpanded: Binding(
+                            get: { expandedPlayers.contains(playerWithRank.player.id) },
+                            set: { isExpanded in
+                                if isExpanded {
+                                    expandedPlayers.insert(playerWithRank.player.id)
+                                } else {
+                                    expandedPlayers.remove(playerWithRank.player.id)
+                                }
+                            }),
+                        content: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                if game.rounds.isEmpty {
+                                    Text("No rounds played.")
+                                } else {
+                                    ForEach(game.rounds.indices, id: \.self) { index in
+                                        let round = game.rounds[index]
+                                        let call = round.calls[playerWithRank.player.id] ?? 0
+                                        let made = round.made[playerWithRank.player.id] ?? 0
+                                        let score = round.scores[playerWithRank.player.id] ?? 0
+                                        Text("Round \(index + 1): Call: \(call), Made: \(made), Score: \(String(format: "%.1f", Double(score) / 10.0))")
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
+                        },
+                        label: {
+                            HStack {
+                                Text("\(playerWithRank.rank).")
+                                Text(playerWithRank.player.name)
+                                Spacer()
+                                Text("Total Score: \(String(format: "%.1f", Double(playerWithRank.totalScore) / 10.0))")
+                            }
+                        }
+                    )
+                    .padding(.vertical, 2)
+                    Divider()
                 }
             }
             .padding(.horizontal)
@@ -144,22 +160,6 @@ struct GameView: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .center)
         }
-    }
-
-    private var roundHistoryView: some View {
-        List {
-            ForEach(game.rounds.indices, id: \.self) { index in
-                HStack {
-                    Text("Round \(index + 1):")
-                    ForEach(game.players) { player in
-                        Text("\((Double(game.rounds[index].scores[player.id] ?? 0) / 10.0), specifier: "%.1f")")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-            }
-        }
-        .listStyle(.plain)
-        .padding(.bottom)
     }
 
     func calculateTotalScore(for player: Player) -> Int {
@@ -211,6 +211,8 @@ struct GameView: View {
         }
 
         var roundScores: [UUID: Int] = [:]
+        var callValues: [UUID: Int] = [:]
+        var madeValues: [UUID: Int] = [:]
         for player in game.players {
             let call = Int(calls[player.id] ?? "0") ?? 0
             let made = Int(made[player.id] ?? "0") ?? 0
@@ -234,8 +236,10 @@ struct GameView: View {
                 }
             }
             roundScores[player.id] = score
+            callValues[player.id] = call
+            madeValues[player.id] = made
         }
-        game.rounds.append(Round(scores: roundScores, isBlind: isBlind))
+        game.rounds.append(Round(scores: roundScores, isBlind: isBlind, calls: callValues, made: madeValues))
         calls = [:]
         made = [:]
     }
